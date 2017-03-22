@@ -23,6 +23,8 @@ twitter_username: wcbowling
 github_username:  wbowling
 repository: vakzz/vakzz.github.io
 
+google_analytics: UA-74386578-2
+
 # Build settings
 markdown: kramdown
 theme: jekyll-theme-midnight
