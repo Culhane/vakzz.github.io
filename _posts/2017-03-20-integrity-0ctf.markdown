@@ -1,11 +1,9 @@
 ---
 layout: post
-title:  "0CTF 2017 Quals - Integrity"
+title:  "Integrity - 0CTF 2017 Quals"
 date:   2017-03-20 22:21:38 +1100
 categories: posts
 ---
-# Integrity - 0CTF 2017 Quals
-
 
 > Just a simple scheme.
 >
