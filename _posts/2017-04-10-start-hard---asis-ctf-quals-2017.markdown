@@ -9,7 +9,7 @@ categories: posts
 >
 > ‍‍‍‍nc 128.199.152.175 10001
 
-*201 Pts, 43 solved, Crypto. [start_hard_c8b452f5aab9a474dcfe1351ec077a601fdf8249][asset]*
+*201 Pts, 43 solved, Pwning. [start_hard_c8b452f5aab9a474dcfe1351ec077a601fdf8249][asset]*
 
 ---
 
