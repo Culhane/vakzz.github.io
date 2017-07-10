@@ -18,13 +18,13 @@ This was a great challenge involving a bunch of different techniques and styles 
 
 ## Part 1 - Gaining access
 
-After visiting the pyzzeria website we recieve the following access denied message:
+After visiting the pyzzeria website we receive the following access denied message:
 
 {% highlight text %}
 The access is currently restricted to staff only ¯\_(ツ)_/¯
 {% endhighlight %}
 
-A quick look for`robots.txt` and other default files revieled nothing of interest, but cookies being returned included `AWSALB` indicating the app was behind a load balancer and a `pySess` indicating a python app. If the filter is based on IP it might be possible to bypass it with an `X-Forwarded-For` header.
+A quick look for`robots.txt` and other default files revealed nothing of interest, but cookies being returned included `AWSALB` indicating the app was behind a load balancer and a `pySess` indicating a python app. If the filter is based on IP it might be possible to bypass it with an `X-Forwarded-For` header.
 
 
 {% highlight bash %}
@@ -55,7 +55,7 @@ Great! We now have access to the main site and can start ordering pizzas.
 
 
 ## Part 2 - Ordering Pizzas
-After installing [Modify Header][header] Chrome extension and adding the `X-Forwarded-For` bypass we are shown the pizza order page where we can choose a margherita or stuffed pizza:
+After installing [Modify Header][header] Chrome extension and adding the `X-Forwarded-For` bypass we are shown the pizza order page where we can choose a `Margherita` or `Stuffed` pizza:
 
 ![Pizza order page][pizzas]
 
@@ -63,11 +63,11 @@ After submitting a pizza, we are given an order code and a link to the oven at h
 
 ![Pizza oven page][order]
 
-The oven allows us to enter in an order code and recieve the details for our pizza
+The oven allows us to enter in an order code and receive the details for our pizza
 
 ![Pizza ready page][oven]
 
-When submitting a pizza, we recieve a `pyzza` cookie that is a large hex string like
+When submitting a pizza, we receive a `pyzza` cookie that is a large hex string like
 {% highlight text %}
 pyzza=4d3a59334235656e7068625746795a32686c636d6c30595170516558703659553168636d646f5a584a706447454b6344414b4b464d6e5a57497a5a54453259545a69595751324d7a59334e57497a5a546b3359544a694e5455304d6a45334e6d456e436e4178436b6b784d4170544a334270626d5668634842735a53634b6344494b6448417a436c4a774e416f753a34626636663763303130306563646462646661353735386462653234666533633734363932363939643536343339326465386362336438643638336131646332
 {% endhighlight %}
@@ -98,7 +98,7 @@ This is a python object that has been serialized with [Pickle][pickle]! If we ar
 
 ![hmac][hmac]
 
-As expected if failed, but we are told that our request has been logged to http://pyzzeria.chall.polictf.it/warehouse/logs/tampering_attempts. Following that link returns a 403, same with `logs`, but `warehouse` shows directory listing containing `dev`, and inside that are a bunch of shared libraries:
+As expected it failed, but we are told that our request has been logged to http://pyzzeria.chall.polictf.it/warehouse/logs/tampering_attempts. Following that link returns a 403, same with `logs`, but `warehouse` shows directory listing containing `dev`, and inside that are a bunch of shared libraries:
 
 ![dev][dev]
 
@@ -173,9 +173,9 @@ order: aaaa
 price: 1337€
 ```
 
-So we have an arbitary ready when cooking a Margherita pizza as Stuffed, but there is a slight problem in that we need to know the `order` code to be able to check the pizza's status from the web site. We can get around this by brute forcing the `order` code one byte at a time, but the other problem is that we have no idea where the secret is in memory as it's part of `cuoco.so` and due to ASLR could be anywhere.
+So we have an arbitrary read when cooking a Margherita pizza as Stuffed, but there is a slight problem in that we need to know the `order` code to be able to check the pizza's status from the web site. We can get around this by brute forcing the `order` code one byte at a time, but the other problem is that we have no idea where the secret is in memory as it's part of `cuoco.so` and due to ASLR could be anywhere.
 
-The other interesting things are we have a heap leake from Stuffed as Margherita, and a pointer leak of `bbbb` from Error as Margherita.
+The other interesting things are we have a heap leak from Stuffed as Margherita, and a pointer leak of `bbbb` from Error as Margherita.
 
 Looking at the cook method in a bit more detail in Binary Ninja, we see at `0x1270` that if `eax` doesn't equal `0x4d` or `0x53` then an error is created with `INVALID` and `invalid test`. 
 
@@ -282,7 +282,7 @@ for i in range(start, secretOffset):
 		break
 ```
 
-At this stage I didn't realise that the connection throttling could be bypassed by modifying the `X-Forwarded-For` header, so I just paused for 5 seconds between each request and left it running. After a while it had found `0y3y0y3!` as the end of the secret so I changed the seach charaters to just `0y3` and it finished much faster. We now have the secret key `y3y0y3y0y3y0y3!`
+At this stage I didn't realise that the connection throttling could be bypassed by modifying the `X-Forwarded-For` header, so I just paused for 5 seconds between each request and left it running. After a while it had found `0y3y0y3!` as the end of the secret so I changed the search characters to just `0y3` and it finished much faster. We now have the secret key `y3y0y3y0y3y0y3!`
 
 
 ## Part 4 - Putting it all together
