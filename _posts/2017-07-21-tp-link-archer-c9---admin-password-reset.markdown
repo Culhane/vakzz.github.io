@@ -19,7 +19,7 @@ math.randomseed(os.time())
 vercode = math.random(100000, 999999)
 ```
 
-The once the token is created, it is valid for 10 minutes, after which a new token will need to be generated.
+Once the token is created, it is valid for 10 minutes, after which a new token will need to be generated.
 
 `os.time()` returns the seconds since epoch, so we should easily be able to recreate this token by seeding with the same number! The router also returns a `Date` header, so we can just parse that and get the exact server time and hence the exact seed!
 
@@ -42,7 +42,7 @@ After a bit of searching, I found that the following code gets run when the admi
 sys.call("usbuser " .. username .. " '" .. password .. "'")
 ```
 
-Username and password are unescaped, but are limited to 16 characters and can only contain length of 16 must be in the ascii range of 33-126.
+Username and password are unescaped, but are limited to 16 characters and must be in the ascii range of 33-126 (no spaces).
 
 After some more testing I found the following payload could be used to execute a remote script:
 
