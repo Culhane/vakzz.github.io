@@ -1,5 +1,5 @@
 ---
-title: TP-Link Archer C9 - Admin Password Reset and RCE
+title: TP-Link Archer C9 - Admin Password Reset and RCE (CVE-2017-11519)
 layout: post
 date:   2017-07-21 16:48:12 +1100
 categories: posts
@@ -71,6 +71,9 @@ TP-Link quick were great to work with, they quickly responded to the initial rep
 * 2017-04-28 - TP-Link send beta firmware to ensure issue was resolved
 * 2017-05-11 - TP-Link published updated firmware
 
+## Links
+* [CVE-2017-11519](http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-11519)
+* [Archer C9 V2 Firemware](http://www.tp-link.com/en/download/Archer-C9_V2.html#Firmware)
 
 ## POC Scripts
 
