@@ -1,5 +1,5 @@
 ---
-title: TP-Link Archer C9 - Admin Password Reset
+title: TP-Link Archer C9 - Admin Password Reset and RCE
 layout: post
 date:   2017-07-21 16:48:12 +1100
 categories: posts
