@@ -27,10 +27,12 @@ google_analytics: UA-74386578-2
 
 # Build settings
 markdown: kramdown
-theme: jekyll-theme-midnight
-gems:
+theme: jekyll-theme-slate
+plugins:
   - jekyll-feed
 exclude:
   - Gemfile
   - Gemfile.lock
-livereload: true
+
+sass:
+  sass_dir: assets/css

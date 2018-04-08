@@ -9,9 +9,21 @@
 
 section {
 	margin-top: 10px;
+	max-width: 1000px;
 }
-
+/*
 code {
 	padding: 0px;
 	margin: 0 2px;
+}*/
+
+.wrapper, .container, .inner {
+	max-width: 1000px;
 }
+
+pre, code {
+	background-color: #222;
+	color: #eee;
+}
+
+@import "rouge";
