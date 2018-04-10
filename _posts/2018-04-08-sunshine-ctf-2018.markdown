@@ -174,7 +174,7 @@ for i in range(8):
     print decode_binary_string(binary)
 ```
 
-### Phishy Phisy
+### Phishy Phishy
 
 > Updating to the newest version of Windows was a pain, but it was totally worth it! It allowed me to unlock my inner Creator, and truly bring the Canvas to life! I'm pretty sure that in the next major release, they are going to go one step further on my favorite application -- THE 4TH DIMENSION.
 >
