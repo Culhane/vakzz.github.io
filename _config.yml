@@ -24,6 +24,8 @@ github_username:  wbowling
 repository: vakzz/vakzz.github.io
 
 google_analytics: UA-74386578-2
+disqus:
+  shortname: devcraft-2
 
 # Build settings
 markdown: kramdown
