@@ -3,6 +3,7 @@
 
 @import "{{ site.theme }}";
 
+
 #header {
 	display: none;
 }
@@ -11,14 +12,14 @@ section {
 	margin-top: 10px;
 	max-width: 1000px;
 }
-/*
-code {
-	padding: 0px;
-	margin: 0 2px;
-}*/
 
-.wrapper, .container, .inner, img {
+
+.wrapper, .container, .inner {
 	max-width: 1000px;
+}
+
+img {
+	max-width: 100%;
 }
 
 pre, code {
@@ -28,6 +29,10 @@ pre, code {
 
 .highlight {
 	background-color: #222;
+}
+
+code.highlighter-rouge, a {
+	overflow-wrap: break-word;
 }
 
 @import "rouge";
