@@ -51,4 +51,4 @@ The next part of the exploit was taken straight from <https://github.com/phoenhe
 
 `flag{fire_just_makes_the_blaze_better}`
 
-[Full exploit code here.](https://github.com/vakzz/ctfs/blob/master/Blaze2018/blazefox/exploit.html
+[Full exploit code here.](https://github.com/vakzz/ctfs/blob/master/Blaze2018/blazefox/exploit.html)
