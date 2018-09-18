@@ -1,0 +1,57 @@
+---
+title: PLC - CSAW Quals 2018
+date: '2018-09-18 22:45:36'
+layout: post
+---
+
+> We've burrowed ourselves deep within the facility, gaining access to the programable logic controllers (PLC) that drive their nuclear enrichment centrifuges. Kinetic damage is necessary, we need you to neutralize these machines.
+> 
+> You can access this challenge at https://wargames.ret2.systems/csaw_2018_plc_challenge
+> 
+> NOTE The wargames platform is out of scope for this challenge, just use it to do the pwnable challenge. Any kind of scanning or misuse will get your ip banned! However, if you do happen to find any security issues, please email us at contact at ret2.io
+
+*300 Pts, 43 solved, pwn*
+
+We are taken to a fancy webapp all that has a build in disassembler, debugger, source code view, python environment, and rop gadget searcher! It it's pretty impressive and would be a great tool for tutorials.
+
+There are 6 steps or achivements for this level, the first is just *Execute the default PLC firmware* which can be done by typing `E`. Then we have to create a firmware image with a valid checksum.
+
+
+There is a `init_checksum` function which looks like it loads the inital firmware, so breaking at `0xbba:  mov     ecx, 0x80` and examining `$rdx` we can see the default firmware:
+
+```bash
+wdb> x/2s $rdx
+0x555555756080: "FWaª1280312U2R2A2N2I2U2M2 2H2E2X2A2F2L2U2O2R2I2D2E2"
+0x5555557560b4: "7777777777777777777777777777777777777777777777777777777777777779"
+```
+
+So it looks like the format is `FW` followed by 2 bytes (maybe the checksum) then an ascii string. The `update_firmware` method reads 400 bytes, and it looks like the `validate_checksum` method will print out the required checksum if a global flag is set. Since we can debug it we can put a breakpoint at `b *validate_checksum+120` at just set $rax=1 and it will print out the required checksum! I just sent the inital firmware again, which passes the test as well as the next task which was to update the plc with the new firmware.
+
+The following task was to exceed normal RRM limits. Looking at the `execute_firmware` method we see that each character in the firmware is an opcode that does something, and I just had a guess that the `7` was to speed things up. So I tried adding a bunch more, breaking to right checksum and running it.
+
+```python
+p.sendline("FW\xFF\xFD1280312U2R2A2N2I2U2M2 2H2E2X2A2F2L2U2O2R2I2D2E2\x0077777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777779".ljust(0x400, "\x00"))
+
+[WARNING]
+[WARNING] /!\ CENTRIFUGE EXCEEDING SAFE RPM LIMITS! /!\
+[WARNING]   MAXIMUM SAFE RPM: 68000
+[WARNING]   CURRENT RPM: 121000
+[WARNING] /!\ CENTRIFUGE EXCEEDING SAFE RPM LIMITS! /!\
+[WARNING]
+```
+
+The next stage was to *specify some 'extra' dangerous enrichment material*. When printing the status of the PLC, the enrichment material is listed. We can see from the default firmware that this is supplied character by character using `2` followed by the desireded letter, and looking at `execute_firmware` there doesnt seem to be any bounds checking.
+
+It would be nice to enable the debug mode, to do that we need to change `0x202499` to be 1. There is only one opcode that writes to that location which is `8`. Given the default firmware cointains `80` at the start we can assume that `81` will enable it, and sure enough it did. Now we can use the debug mode to automatically update our checksum.
+
+If we specify a material of length 34 we can leak an address using the print status. This gives us the next task which is to pop a shell and read the flag :) The leak is actually a function pointer to `rpm_alert`, so we should be able to overwrite it and then trigger the alert to get RIP control. 
+
+![pivot](/assets/csaw18/plc1.jpg)
+
+There is a nice spot to jump to at `0xf12` that allows us to build a rop chain. We can leak libc and then jump back to `plc_main` to perfom the rop again. 
+
+One last snag is that `disable_system` is run at the start, which disables to use of `execve` in libc. To work around this we can just do a direct `syscall` to execve instead.
+
+After a bit more searching for the required gadgets, we have a shell and the flag `flag{1s_thi5_th3_n3w_stuxn3t_0r_jus7_4_w4r_g4m3}`
+
+Full exploit at [plc.py](https://github.com/vakzz/ctfs/blob/master/CSAW18/plc/plc.py)
