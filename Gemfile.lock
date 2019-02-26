@@ -244,6 +244,7 @@ PLATFORMS
 DEPENDENCIES
   github-pages
   jekyll-feed
+  jekyll-sitemap
   tzinfo-data
 
 RUBY VERSION
