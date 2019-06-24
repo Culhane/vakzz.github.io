@@ -23,16 +23,20 @@ img {
 }
 
 pre, code {
-	background-color: #222;
+	background-color: #232323;
 	color: #eee;
 }
 
 .highlight {
-	background-color: #222;
+	background-color: #232323;
 }
 
 code.highlighter-rouge, a {
 	overflow-wrap: break-word;
+}
+
+code {
+	padding: 1px 4px;
 }
 
 @import "rouge";
