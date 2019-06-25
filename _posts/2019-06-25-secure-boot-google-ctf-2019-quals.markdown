@@ -24,7 +24,7 @@ contents/
      startup.nsh
 ```
 
-The execption to this is the **OVMF.fd** file, which according to binwalk is a UEFI PI Firmware Volume.
+The exception to this is the **OVMF.fd** file, which according to binwalk is a UEFI PI Firmware Volume.
 
 ```bash
 $ binwalk ./OVMF.fd
@@ -36,7 +36,7 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 
 After looking at **run.py** and a bit of googling, I came across [tianocore](https://github.com/tianocore/tianocore.github.io/wiki/OVMF) which states *OVMF is an EDK II based project to enable UEFI support for Virtual Machines. OVMF contains sample UEFI firmware for QEMU and KVM.* which seem to be what we were looking at.
 
-Running **run.py** launche qemu and starts to load a *UEFI Interactive Shell* but fails and exits straight away, just like the challenge discription suggests.
+Running **run.py** launches qemu and starts to load a *UEFI Interactive Shell* but fails and exits straight away, just like the challenge description suggests.
 
 ```
 UEFI Interactive Shell v2.2
@@ -193,7 +193,7 @@ So the plan is to try and find a 32 byte section of code that we can overwrite w
 0x67DB0BB                 retn
 ```
 
-Initally the hashes I was generating did not match the ones from the sha256 function, but looking at the paramaters being passed in showed that with the bytes 128-136 of the password were being replaces with null due to `buf[i] = 0;`. Fixing that I was able to generate matching hashes and wrote a quick function to find a sha:
+Initally the hashes I was generating did not match the ones from the sha256 function, but looking at the paramaters being passed in showed that bytes 128-136 of the password were being replaced with null due to `buf[i] = 0;`. Fixing that I was able to generate matching hashes and wrote a quick function to find a sha:
 
 ```python
 target = 0x67DB07B
