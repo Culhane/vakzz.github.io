@@ -26,7 +26,7 @@ The compiler code that generates the jump is the following:
 out[4] = (intbracket(cmd + 4) - instrno) * 5 - 5; // jne imm8
 ```
 
-So **JMP(0)** would create a jump to offset **0** from the page and **JMP(0)** to offset **5**. I realised that result was being put into `out[4]` which is only one byte, meaning we can overflow it to potentially remove the 5 byte alignment. For example if we use **JMP(-51)** when we are at `instrno` 20 we get `(-51-20)*5-5 == -360` which then gets truncated to **-104**, resulting in a jump to offset **1**.
+So **JMP(0)** would create a jump to offset **0** from the page and **JMP(1)** to offset **5**. I realised that result was being put into `out[4]` which is only one byte, meaning we can overflow it to potentially remove the 5 byte alignment. For example if we use **JMP(-51)** when we are at `instrno` 20 we get `(-51-20)*5-5 == -360` which then gets truncated to **-104**, resulting in a jump to offset **1**.
 
 The jump can now be used to go to the middle of an instruction, for example we can use **MOV** to encode our payload in two byte increments:
 
